@@ -1,22 +1,18 @@
-# TODO
-# • preparare un dataset di circa 20 canzoni di vario genere [√ preparato per 10 canzoni]
-# • provare ad eseguire un'estrazione di informazioni (√bpm, danceability, √pitch, √loudness, (√)energy, ...) dalle entità del dataset
-# • definire IO delle associazioni delle canzoni ad un cerco colore/simbolo/cosa in modo che possa poi essere usato per un map con l'estrazione delle info
-
-# INTERESTING EXTRACTION: https://nitratine.net/blog/post/finding-emotion-in-music-with-python/
-# in questo caso si tratta dei dati che si possono ottenere con le api di Spotify
-# "danceability" : 0.735,
-# "energy" : 0.578,
-# "key" : 5,
-# "loudness" : -11.840,
-# "mode" : 0,
-# "speechiness" : 0.0461,
-# "acousticness" : 0.514,
-# "instrumentalness" : 0.0902,
-# "liveness" : 0.159,
-# "valence" : 0.624,
-# "tempo" : 98.002,
-
+'''
+INTERESTING EXTRACTION: https://nitratine.net/blog/post/finding-emotion-in-music-with-python/
+in questo caso si tratta dei dati che si possono ottenere con le api di Spotify
+"danceability" : 0.735,
+"energy" : 0.578,
+"key" : 5,
+"loudness" : -11.840,
+"mode" : 0,
+"speechiness" : 0.0461,
+"acousticness" : 0.514,
+"instrumentalness" : 0.0902,
+"liveness" : 0.159,
+"valence" : 0.624,
+"tempo" : 98.002,
+'''
 
 import librosa # per caricare il file
 import pyloudnorm # per la Loudness in RMS
@@ -33,6 +29,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 from PIL import Image
 import math as m
+
 
 '''
 # AUDIO FILES
@@ -57,6 +54,7 @@ audio_file = 'dataset/wav/Daft Punk - Giorgio By Moroder.wav' # FUNKY ELETTRONIC
 audio_file = 'dataset/wav/Pharrell Williams - Happy.wav' # POP ALLEGRA
 '''
 
+# dataset iniziale ---> AUMENTARE
 data_set = [
     'ASAP Rocky - RIOT',
     'Burial - Archangel',
@@ -78,9 +76,9 @@ data_set = [
     'Pharrell Williams - Happy',
     'Sons Of The East - Into The Sun']
 
+# Valori max e min del coefficente (da verificare con diverse canzoni) per tarare la normalizzazione del coefficente (deve essere tra 0 e 1)
 MAX_VAL = 8000
 MIN_VAL = 200
-SELECTED_DATA = 18
 
 # Band Pass Filter: https://swharden.com/blog/2020-09-23-signal-filtering-in-python/
 def bandpass(data: np.ndarray, edges: list[float], sample_rate: float, poles: int = 5):
@@ -88,6 +86,7 @@ def bandpass(data: np.ndarray, edges: list[float], sample_rate: float, poles: in
     filtered_data = scipy.signal.sosfiltfilt(sos, data)
     return filtered_data
 
+# calcolo del coefficente che vado poi ad utilizzare per mappare il colore da associare all'immagine
 def coefficent(pitch, energy, bpm):
     return (energy/bpm)-(energy/pitch);
 
@@ -98,30 +97,56 @@ def calculate_color(pitch, energy, bpm):
     normalized_value = ((cf - MIN_VAL) / (MAX_VAL - MIN_VAL))
     '''
     mapping dei valori ai colori
-    ---> output in RGBa mappando i valori (da 0 a 1) su il tipo PLASMA che va da un minimo di blu scuro ad un massimo di giallo
+    ---> output in RGBa mappando i valori (da 0 a 1)
     '''
-    h = plt.cm.jet(normalized_value) 
-    # h = plt.cm.rainbow(normalized_value)
+    # h = plt.cm.jet(normalized_value) 
+    h = plt.cm.rainbow(normalized_value) # ---> è la scala colori che (a mio parere) fa mappa al meglio coefficente <--> colore
     # h = plt.cm.gnuplot2(normalized_value)
 
     r, g, b = tuple(int(rgba * 255) for rgba in h[:3]) # ----> conversione in RGB
     output_string = 'rgb(' + str(r) + ', ' + str(g) + ', ' + str(b) + ')'
-    
-    print('---> Normalized CF: ' + str(normalized_value))
-    print('---> Map: ' + str(h))
-    print('---> Output color: ' + output_string + '\n')
-
 
     return output_string
 
+'''
+Estrazione del Pitch: 
+Pitch is the subjective perception of a sound wave by the individual person, which cannot be directly measured. 
+However, this does not necessarily mean that people will not agree on which notes are higher and lower.
+Pitch refers to the specific frequency of a sound wave, which is measured in Hertz (Hz)
+
+Fonti: 
+    - https://scicoding.com/pitchdetection/
+    - https://en.wikipedia.org/wiki/Pitch_(music)
+'''
+
+def pitch_detection(samples, sampling_rate):
+    # aggiungendo la finestra di scorrimento sul segnale dato in input, è possibile lavorare anche con dei sottoinsiemi che ho definito "bucket"
+    autocorrelation_window = 0.1  # Lunghezza della finestra in secondi
+    window_length = int(autocorrelation_window * sampling_rate)
+    # calcolo dell'autocorrelazione con successivo rilevamento dei picchi e calcolo del pitch
+    autocorrelation = sm.tsa.acf(samples, nlags=window_length, missing="conservative")
+    peaks = find_peaks(autocorrelation)[0]
+    # ci sono casi in cui non riesce a trovare nessun picco, quindi in quel caso ritorno un pitch minimo
+    if len(peaks) != 0:
+        lag = peaks[0]
+        pitch = sampling_rate / lag
+        return pitch
+    
+    return 1
+
+def energy_detection(audio_signal):
+    energy_extractor = es.Energy() # estrattore dell'energia
+    energy = energy_extractor(audio_signal) # calcolo effettivo dell'energia fatto sul file audio
+    return energy
 
 def image_generator(pitch, energy, bpm):
+    # dimensioni dell'immagine da generare
     img_length = 1080
     img_hight = 240
+    # creo l'immagine con il colore rgb calcolato dalla funzione appostita
     image = Image.new('RGB', (img_length, img_hight), calculate_color(pitch, energy, bpm))
-    path = './img_jet_map/img-' + title + '.png'
+    path = './img_rainbow_map/img-' + title + '.png'
     image.save(path)
-    # image.show()
 
 def spectrogram_generator(audio_file, samples, sr):
     # ESTRAGGO E VISUALIZZAO LO SPETTROGRAMMA
@@ -135,15 +160,21 @@ def spectrogram_generator(audio_file, samples, sr):
     plt.title(audio_file)
     plt.show()
 
-# =============================================================================================================================
-for i in range(0, 1):
+'''
+MAIN PROGRAM:
+
+Faccio un ciclo for per poter eseguire l'analisi di tutti i file audio inseriti nel dataset
+'''
+for i in range(len(data_set)):
 
     title = data_set[i]
     audio_file = 'dataset/wav/' + title + '.wav'
 
     # Carico il file audio utilizzando la libreria "librosa"
-    audio_samples, sampling_rate = librosa.load(audio_file) # output 1: **NP array** contenenete i campioni del file wav. Output 2: freq. di campionamento
-    loader = es.EasyLoader(filename=audio_file) # FONTE https://essentia.upf.edu/essentia_python_tutorial.html
+    audio_samples, sampling_rate = librosa.load(audio_file) # output 1: nparray contenenete i campioni del file wav. Output 2: freq. di campionamento
+    # FONTE https://essentia.upf.edu/essentia_python_tutorial.html 
+    # --> si tratta di un altro tipo di loading per poter poi calcolare l'energia del segnale
+    loader = es.EasyLoader(filename=audio_file)
     audio_signal = loader()
 
     # estraggo informazioni generali ed utili
@@ -159,7 +190,7 @@ for i in range(0, 1):
     # =============================================================================================================================
     '''
     utitlizzo il segnale filtrato solo per il rilevamento del pitch per evitare che la presenza 
-    di kicks e low-end in generale influenzi quanto viene misurato
+    di kicks e low-end (sotto i 100 Hz) in generale influenzi quanto viene misurato
     '''
     filtered_audio_samples = bandpass(audio_samples, [100, 10000], sampling_rate)
 
@@ -186,19 +217,50 @@ for i in range(0, 1):
 
     # FONTE: https://essentia.upf.edu/reference/streaming_Energy.html
     # Calcolo dell'energia del segnale
-    energy_extractor = es.Energy() # estrattore dell'energia
-    energy = energy_extractor(audio_signal) # calcolo effettivo dell'energia fatto sul file audio
+    energy = energy_detection(audio_signal)
     print(f"Signal Energy: + {energy}")
     # =============================================================================================================================
 
     # =============================================================================================================================
-    # Estrazione del Pitch: pitch refers to the specific frequency of a sound wave, which is measured in Hertz (Hz)
-    # Fonte: https://scicoding.com/pitchdetection/
-    autocorrelazione = sm.tsa.acf(filtered_audio_samples)
-    peaks = find_peaks(autocorrelazione)[0] # trova il picco (di frequenze (?)) nell'autocorrelazione
-    lag = peaks[0] # prendo solo il primo picco come componente per il pitch
-    pitch = sampling_rate / lag # Trasformo il valore di picco ricavato prima in frequenza
+    # Pitch rilevato sull'intero file audio --> frequenza specifica del file audio (guardando lo spettrogramma si può intendere come la frequenza più presente)
+    pitch = pitch_detection(filtered_audio_samples, sampling_rate)
     print(f"\nPitch: {pitch:.2f} Hz")
+
+    # Calcolo del pitch in funzione del tempo --> divido il segnale in bucket contenenti un certo numero di campioni e viene eseguito il calcolo del pitch per ogni bucket
+    samples_in_bucket = int(sampling_rate)
+    num_bucket = int(audio_samples.size/samples_in_bucket)
+    
+    pitch_per_bucket = []
+    # energy_per_bucket = []
+    coef_per_bucket = [0] * num_bucket
+    # divido l'array principale dei campioni in num_bucket buckets usando .split di numpy
+    # buckets = np.array_split(audio_samples, num_bucket)
+    buckets = [audio_samples[i:i+samples_in_bucket] for i in range(0, len(audio_samples), samples_in_bucket)]
+
+    signal_buckets = np.array_split(audio_signal, num_bucket)
+    
+    '''
+    TODO:
+        - verificare la correttezza del calcolo del pitch
+        - aggiungere il calcolo dell'energia per bucket (occhio che non si calcola sugli audio_samples, ma sull'audio signal)
+        - calolare per ogni bucket il coefficente
+        - si potrebbe creare un qualcosa dove per ogni cella sono mappati pitch e energy per ogni bucket [[5458.36, 1102.5], [5458.36, 1160.52], [5304.74, 3150.0], ...]
+    '''
+
+    for bucket in buckets:
+        pitch_iteration = pitch_detection(bucket, sampling_rate)
+        pitch_per_bucket.append(pitch_iteration) # aggiungo il risultato PER ORA ad un array dedicato al risultato solo per il pitch
+        # print("Bucket [", i , "]: ", pitch_per_bucket[i])
+
+    # print(pitch_per_bucket)
+    
+    '''
+    ENERGIA IN FUNZIONE DEL TEMPO --> DA VERIFICARNE LA FATTIBILITA'
+    for bucket in signal_buckets:
+        energy_iteration = energy_detection(bucket)
+        energy_per_bucket.append(energy_iteration)
+
+    '''
     # =============================================================================================================================
 
     # =============================================================================================================================
@@ -207,7 +269,7 @@ for i in range(0, 1):
     chroma_rappresentation = librosa.feature.chroma_stft(y=audio_samples, sr=sampling_rate)
     # calcolo della media della Chroma Feature
     mean_chroma = np.mean(chroma_rappresentation, axis=1)
-    # mapping dei risultati con le note permesse
+    # mapping dei risultati con le note
     chroma_to_key = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B']
     # cerco il valore della Key
     estimated_key_index = np.argmax(mean_chroma) # indice nell'array
@@ -219,12 +281,13 @@ for i in range(0, 1):
     # =============================================================================================================================
     # FONTE: https://mtg.github.io/essentia.js/docs/api/Essentia.html#Danceability
 
-    # Calcolo/Estrazione di "Danceability" !! NON PER IL FILE AUDIO DI TEST - Segnale Triancolare - !!
+    # Calcolo/Estrazione di "Danceability"
     danceability = es.Danceability() #  è uno degli estrattori di "essentia.standard"  per calcolare la danceability di una traccia
     danceability_value, dfa_array = danceability(audio_signal) # https://essentia.upf.edu/reference/streaming_Danceability.html --> spiegato ciò che ritorna essentia.standard.Danceability
     print(f"\nDanceability: + {danceability_value:.4f}") # valore di danceability da 0 a 3
     # =============================================================================================================================
-
+    print("\n----------------------------------------------------------------")
+    # Il coefficente mi serve per poter fare il mapping della canzone con il relativo colore
     coef = coefficent(pitch, energy, bpm)
     print(f"Coefficent: + {coef:.2f}")
     print("----------------------------------------------------------------\n")
