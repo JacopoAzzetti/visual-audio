@@ -59,7 +59,6 @@ data_set = [
     'ASAP Rocky - RIOT',
     'Burial - Archangel',
     'Dolly Parton - Jolene',
-    'Jaska - Run away',
     'Jay-Z - The Story Of OJ',
     'Kanye West - Jail',
     'Lana Del Rey - Groupie Love ft. A$AP Rocky',
@@ -134,10 +133,10 @@ def pitch_detection(samples, sampling_rate):
     
     return 1
 
-def energy_detection(audio_signal):
+def energy_detection(audio_signal, time):
     energy_extractor = es.Energy() # estrattore dell'energia
     energy = energy_extractor(audio_signal) # calcolo effettivo dell'energia fatto sul file audio
-    return energy
+    return energy/time
 
 def image_generator(pitch, energy, bpm):
     # dimensioni dell'immagine da generare
@@ -165,7 +164,8 @@ MAIN PROGRAM:
 
 Faccio un ciclo for per poter eseguire l'analisi di tutti i file audio inseriti nel dataset
 '''
-for i in range(len(data_set)):
+for i in range(1, 2):
+# for i in range(len(data_set)):
 
     title = data_set[i]
     audio_file = 'dataset/wav/' + title + '.wav'
@@ -217,7 +217,7 @@ for i in range(len(data_set)):
 
     # FONTE: https://essentia.upf.edu/reference/streaming_Energy.html
     # Calcolo dell'energia del segnale
-    energy = energy_detection(audio_signal)
+    energy = energy_detection(audio_signal, t)
     print(f"Signal Energy: + {energy}")
     # =============================================================================================================================
 
@@ -266,6 +266,7 @@ for i in range(len(data_set)):
     # =============================================================================================================================
     # Estrazione della KEY della traccia
     # FONTR: https://medium.com/@oluyaled/detecting-musical-key-from-audio-using-chroma-feature-in-python-72850c0ae4b1
+    # estrae un "chronogram" (ovvero un grafico dove si possono osservare le diverse note) dal file audio datogli in input
     chroma_rappresentation = librosa.feature.chroma_stft(y=audio_samples, sr=sampling_rate)
     # calcolo della media della Chroma Feature
     mean_chroma = np.mean(chroma_rappresentation, axis=1)
@@ -286,19 +287,17 @@ for i in range(len(data_set)):
     danceability_value, dfa_array = danceability(audio_signal) # https://essentia.upf.edu/reference/streaming_Danceability.html --> spiegato ciò che ritorna essentia.standard.Danceability
     print(f"\nDanceability: + {danceability_value:.4f}") # valore di danceability da 0 a 3
     # =============================================================================================================================
-    print("\n----------------------------------------------------------------")
     # Il coefficente mi serve per poter fare il mapping della canzone con il relativo colore
     coef = coefficent(pitch, energy, bpm)
     print(f"Coefficent: + {coef:.2f}")
-    print("----------------------------------------------------------------\n")
             
 
     # =============================================================================================================================
 
     '''
-    spectrogram_generator(audio_file, audio_samples, sampling_rate)
-    '''
     image_generator(pitch, energy, bpm)
+    spectrogram_generator(title, filtered_audio_samples, sampling_rate)
+    '''
 
     print("================================================================\n")
 
