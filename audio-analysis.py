@@ -76,8 +76,8 @@ data_set = [
     'Sons Of The East - Into The Sun']
 
 # Valori max e min del coefficente (da verificare con diverse canzoni) per tarare la normalizzazione del coefficente (deve essere tra 0 e 1)
-MAX_VAL = 8000
-MIN_VAL = 200
+MAX_VAL = 15000
+MIN_VAL = 400
 
 # Band Pass Filter: https://swharden.com/blog/2020-09-23-signal-filtering-in-python/
 def bandpass(data: np.ndarray, edges: list[float], sample_rate: float, poles: int = 5):
@@ -86,21 +86,21 @@ def bandpass(data: np.ndarray, edges: list[float], sample_rate: float, poles: in
     return filtered_data
 
 # calcolo del coefficente che vado poi ad utilizzare per mappare il colore da associare all'immagine
-def coefficent(pitch, energy, bpm):
-    return (energy/bpm)-(energy/pitch);
+def coefficent(pitch, energy, bpm, duration):
+    return ((energy/bpm)+(energy/pitch))*duration;
 
 # Mapping dei colori: https://matplotlib.org/stable/gallery/color/colormap_reference.html
-def calculate_color(pitch, energy, bpm):
-    cf = coefficent(pitch, energy, bpm)
+def calculate_color(pitch, energy, bpm, duration):
+    cf = coefficent(pitch, energy, bpm, duration)
 
-    normalized_value = ((cf - MIN_VAL) / (MAX_VAL - MIN_VAL))
+    normalized_value = 1-((cf - MIN_VAL) / (MAX_VAL - MIN_VAL))
     '''
     mapping dei valori ai colori
     ---> output in RGBa mappando i valori (da 0 a 1)
     '''
     # h = plt.cm.jet(normalized_value) 
-    h = plt.cm.rainbow(normalized_value) # ---> è la scala colori che (a mio parere) fa mappa al meglio coefficente <--> colore
-    # h = plt.cm.gnuplot2(normalized_value)
+    # h = plt.cm.rainbow(normalized_value) # ---> è la scala colori che (a mio parere) fa mappa al meglio coefficente <--> colore
+    h = plt.cm.Spectral(normalized_value)
 
     r, g, b = tuple(int(rgba * 255) for rgba in h[:3]) # ----> conversione in RGB
     output_string = 'rgb(' + str(r) + ', ' + str(g) + ', ' + str(b) + ')'
@@ -138,13 +138,13 @@ def energy_detection(audio_signal, time):
     energy = energy_extractor(audio_signal) # calcolo effettivo dell'energia fatto sul file audio
     return energy/time
 
-def image_generator(pitch, energy, bpm):
+def image_generator(pitch, energy, bpm, duration):
     # dimensioni dell'immagine da generare
     img_length = 1080
     img_hight = 240
     # creo l'immagine con il colore rgb calcolato dalla funzione appostita
-    image = Image.new('RGB', (img_length, img_hight), calculate_color(pitch, energy, bpm))
-    path = './img_rainbow_map/img-' + title + '.png'
+    image = Image.new('RGB', (img_length, img_hight), calculate_color(pitch, energy, bpm, duration))
+    path = './img_rainbow_map/img-timeenrgy-' + title + '.png'
     image.save(path)
 
 def spectrogram_generator(audio_file, samples, sr):
@@ -164,7 +164,7 @@ MAIN PROGRAM:
 
 Faccio un ciclo for per poter eseguire l'analisi di tutti i file audio inseriti nel dataset
 '''
-for i in range(1, 2):
+for i in range(14, 15):
 # for i in range(len(data_set)):
 
     title = data_set[i]
@@ -231,13 +231,10 @@ for i in range(1, 2):
     num_bucket = int(audio_samples.size/samples_in_bucket)
     
     pitch_per_bucket = []
-    # energy_per_bucket = []
-    coef_per_bucket = [0] * num_bucket
+    energy_per_bucket = []
+    coef_per_bucket = []
     # divido l'array principale dei campioni in num_bucket buckets usando .split di numpy
-    # buckets = np.array_split(audio_samples, num_bucket)
     buckets = [audio_samples[i:i+samples_in_bucket] for i in range(0, len(audio_samples), samples_in_bucket)]
-
-    signal_buckets = np.array_split(audio_signal, num_bucket)
     
     '''
     TODO:
@@ -247,18 +244,49 @@ for i in range(1, 2):
         - si potrebbe creare un qualcosa dove per ogni cella sono mappati pitch e energy per ogni bucket [[5458.36, 1102.5], [5458.36, 1160.52], [5304.74, 3150.0], ...]
     '''
 
+    # calcolo del pitch per bucket
     for bucket in buckets:
         pitch_iteration = pitch_detection(bucket, sampling_rate)
         pitch_per_bucket.append(pitch_iteration) # aggiungo il risultato PER ORA ad un array dedicato al risultato solo per il pitch
-        # print("Bucket [", i , "]: ", pitch_per_bucket[i])
-
-    # print(pitch_per_bucket)
     
+    # calcolo dell'energia del segnale per bucket
+    for bucket in buckets:
+        energy_iteration = energy_detection(bucket, 1)
+        energy_per_bucket.append(energy_iteration)
+    
+    for i in range(0, len(energy_per_bucket)):
+        cf_tmp = coefficent(pitch_per_bucket[i], energy_per_bucket[i], bpm, 1)
+        coef_per_bucket.append(cf_tmp)
+   
+    MAX_VAL = np.max(coef_per_bucket)
+    MIN_VAL = np.min(coef_per_bucket)
+    
+    # normalizzo tutti i valori del coefficente per impostarli da 1 a 0
+    for i in range(0, len(coef_per_bucket)):
+        coef_per_bucket[i] = 1-((coef_per_bucket[i] - MIN_VAL) / (MAX_VAL - MIN_VAL))
+    '''
+    test per vedere intnto la modifica del colore di un immagine infunzione del tempo
+    '''
+    larghezza = len(coef_per_bucket)
+    altezza = 240
+
+    immagine = Image.new("RGB", (larghezza, altezza), "white")
+
+    
+
+    for x in range(larghezza):
+        color = plt.cm.Spectral(coef_per_bucket[x])
+        color_rgb = tuple(int(rgba * 255) for rgba in color[:3])
+
+        for y in range(altezza):
+            immagine.putpixel((x, y), color_rgb)
+        
+    # Salva l'immagine
+    immagine.save('./timefunction-img/' + title + '.png')
+
+        
     '''
     ENERGIA IN FUNZIONE DEL TEMPO --> DA VERIFICARNE LA FATTIBILITA'
-    for bucket in signal_buckets:
-        energy_iteration = energy_detection(bucket)
-        energy_per_bucket.append(energy_iteration)
 
     '''
     # =============================================================================================================================
@@ -288,15 +316,15 @@ for i in range(1, 2):
     print(f"\nDanceability: + {danceability_value:.4f}") # valore di danceability da 0 a 3
     # =============================================================================================================================
     # Il coefficente mi serve per poter fare il mapping della canzone con il relativo colore
-    coef = coefficent(pitch, energy, bpm)
+    coef = coefficent(pitch, energy, bpm, t)
     print(f"Coefficent: + {coef:.2f}")
             
 
     # =============================================================================================================================
 
     '''
-    image_generator(pitch, energy, bpm)
     spectrogram_generator(title, filtered_audio_samples, sampling_rate)
+    image_generator(pitch, energy, bpm, t)
     '''
 
     print("================================================================\n")
