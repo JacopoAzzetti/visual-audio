@@ -27,7 +27,7 @@ import scipy.signal
 import scipy.io.wavfile
 import matplotlib.pyplot as plt
 import numpy as np
-from PIL import Image
+from PIL import Image, ImageFilter
 import math as m
 
 
@@ -73,11 +73,18 @@ data_set = [
     'Armand Van Helden - Wings (I Won t Let You Down)',
     'Daft Punk - Giorgio By Moroder',
     'Pharrell Williams - Happy',
-    'Sons Of The East - Into The Sun']
+    'Sons Of The East - Into The Sun',
+    'The Rippingtons - Aruba!',
+    'Nocturne, Op 9, No 2',
+    'Snow Patrol - Chasing Cars',
+    'In The Hall Of The Mountain King']
 
 # Valori max e min del coefficente (da verificare con diverse canzoni) per tarare la normalizzazione del coefficente (deve essere tra 0 e 1)
 MAX_VAL = 15000
-MIN_VAL = 400
+MIN_VAL = 0
+
+MAX_VAL_BUCKET = 40
+MIN_VAL_BUCKET = 0
 
 # Band Pass Filter: https://swharden.com/blog/2020-09-23-signal-filtering-in-python/
 def bandpass(data: np.ndarray, edges: list[float], sample_rate: float, poles: int = 5):
@@ -87,7 +94,7 @@ def bandpass(data: np.ndarray, edges: list[float], sample_rate: float, poles: in
 
 # calcolo del coefficente che vado poi ad utilizzare per mappare il colore da associare all'immagine
 def coefficent(pitch, energy, bpm, duration):
-    return ((energy/bpm)+(energy/pitch))*duration;
+    return ((energy/pitch)+((energy/bpm)*duration));
 
 # Mapping dei colori: https://matplotlib.org/stable/gallery/color/colormap_reference.html
 def calculate_color(pitch, energy, bpm, duration):
@@ -144,7 +151,7 @@ def image_generator(pitch, energy, bpm, duration):
     img_hight = 240
     # creo l'immagine con il colore rgb calcolato dalla funzione appostita
     image = Image.new('RGB', (img_length, img_hight), calculate_color(pitch, energy, bpm, duration))
-    path = './img_rainbow_map/img-timeenrgy-' + title + '.png'
+    path = './img_rainbow_map/3-img-timeenrgy-' + title + '.png'
     image.save(path)
 
 def spectrogram_generator(audio_file, samples, sr):
@@ -164,8 +171,8 @@ MAIN PROGRAM:
 
 Faccio un ciclo for per poter eseguire l'analisi di tutti i file audio inseriti nel dataset
 '''
-for i in range(14, 15):
-# for i in range(len(data_set)):
+# for i in range(9, 10):
+for i in range(len(data_set)):
 
     title = data_set[i]
     audio_file = 'dataset/wav/' + title + '.wav'
@@ -248,41 +255,63 @@ for i in range(14, 15):
     for bucket in buckets:
         pitch_iteration = pitch_detection(bucket, sampling_rate)
         pitch_per_bucket.append(pitch_iteration) # aggiungo il risultato PER ORA ad un array dedicato al risultato solo per il pitch
-    
+
+
     # calcolo dell'energia del segnale per bucket
     for bucket in buckets:
         energy_iteration = energy_detection(bucket, 1)
         energy_per_bucket.append(energy_iteration)
     
     for i in range(0, len(energy_per_bucket)):
-        cf_tmp = coefficent(pitch_per_bucket[i], energy_per_bucket[i], bpm, 1)
+        cf_tmp = coefficent(pitch_per_bucket[i], energy_per_bucket[i], bpm, 1);
         coef_per_bucket.append(cf_tmp)
-   
-    MAX_VAL = np.max(coef_per_bucket)
-    MIN_VAL = np.min(coef_per_bucket)
+
+    # MAX_VAL = np.max(coef_per_bucket)
+    # MIN_VAL = np.min(coef_per_bucket)
     
+    # Per l'analisi per bucket, il risultato del coefficente è molto minore a quello generale per tutte le tracce, così devo diminuire i livelli massimi e minimi per la normalizzazione
     # normalizzo tutti i valori del coefficente per impostarli da 1 a 0
     for i in range(0, len(coef_per_bucket)):
-        coef_per_bucket[i] = 1-((coef_per_bucket[i] - MIN_VAL) / (MAX_VAL - MIN_VAL))
+        coef_per_bucket[i] = 1-((coef_per_bucket[i] - MIN_VAL_BUCKET) / (MAX_VAL_BUCKET - MIN_VAL_BUCKET))
     '''
     test per vedere intnto la modifica del colore di un immagine infunzione del tempo
     '''
-    larghezza = len(coef_per_bucket)
+    # larghezza = len(coef_per_bucket)
+    larghezza = 3*len(coef_per_bucket)
     altezza = 240
+
+    larghezza_colonne = int(larghezza / len(coef_per_bucket))-1 # diminuisco la larghezza delle colonne per fare in modo che ci stia tutta l'immagine nei 1080 pixel (problemi di approssimazione)
+
+    counter_colonne = 0
 
     immagine = Image.new("RGB", (larghezza, altezza), "white")
 
-    
+    # for x in range(len(coef_per_bucket)):
+    #     color = plt.cm.Spectral(coef_per_bucket[x])
+    #     color_rgb = tuple(int(rgba * 255) for rgba in color[:3])
+        
+    #     for y in range(altezza):
+    #         immagine.putpixel((x, y), color_rgb)
 
-    for x in range(larghezza):
+    
+    for x in range(len(coef_per_bucket)):
         color = plt.cm.Spectral(coef_per_bucket[x])
         color_rgb = tuple(int(rgba * 255) for rgba in color[:3])
-
-        for y in range(altezza):
-            immagine.putpixel((x, y), color_rgb)
         
+        for i in range(larghezza_colonne+1):
+            pos = x+(counter_colonne*larghezza_colonne)+i
+            if pos < larghezza:
+                for y in range(altezza):
+                    immagine.putpixel((pos, y), color_rgb)
+                    # print("Put Pixel X = ", (pos), ", Y = ", y)
+                    # print("x = ", x, " colonna = ", pos, " i = ", i , "\n")
+        
+        counter_colonne += 1
+
+    img_fitered = immagine.filter(ImageFilter.BLUR)
+
     # Salva l'immagine
-    immagine.save('./timefunction-img/' + title + '.png')
+    img_fitered.save('./timefunction-img/3-' + title + '.png')
 
         
     '''
@@ -324,8 +353,8 @@ for i in range(14, 15):
 
     '''
     spectrogram_generator(title, filtered_audio_samples, sampling_rate)
-    image_generator(pitch, energy, bpm, t)
     '''
+    image_generator(pitch, energy, bpm, t)
 
     print("================================================================\n")
 
