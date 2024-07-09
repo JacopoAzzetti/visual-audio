@@ -1,0 +1,15 @@
+python=3.12.3
+librosa=0.10.2.post1
+inquirer=3.3.0
+statsmodels=0.14.2
+matplotlib=3.8.4
+pygame=2.6.0
+webrtcvad=2.0.10
+scipy=1.13.1
+numpy=1.26.4
+tqdm=4.66.4
+# ffmpeg=0.2.0
+# libsndfile=1.4.4
+demucs=4.0.1
+pyloudnorm=0.1.1
+essentia=2.1-beta6-dev
