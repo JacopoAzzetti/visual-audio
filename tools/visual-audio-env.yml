@@ -14,9 +14,9 @@ dependencies:
   - numpy
   - tqdm
   # dipendenze per separazione della traccia
-  - ffmpeg
-  - libsndfile
   - pip:
       - demucs
       - pyloudnorm
       - essentia
+      - ffmpeg
+      - libsndfile
