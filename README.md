@@ -1,6 +1,6 @@
 # Visual Audio
 
-Una rappresentazione visuale di tracce audio\*
+_Una rappresentazione visuale di tracce audio_
 
 ## Creazione dell'ambiente virtuale
 
