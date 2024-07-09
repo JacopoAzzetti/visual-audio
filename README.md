@@ -4,7 +4,7 @@ _Una rappresentazione visuale di tracce audio_
 
 ## Creazione dell'ambiente virtuale
 
-Per iniziare, è necessario che sia installato `conda` sulla propria macchina (https://www.anaconda.com/download).
+Per iniziare, è necessario che sia installato `conda` sulla propria macchina (https://conda.io/projects/conda/en/latest/user-guide/install/index.html).
 
 Una volta installato ed utilizzabile, è necessario creare l'ambiente virtuale già predisposto con tutte le dipendenze richieste dal progetto. Dalla cartella principale del progetto (`./visual-audio`), lanciare il seguente comando:
 
@@ -24,7 +24,7 @@ Una volta abilitato l'ambiente virtuale creato in precedenza, sarà possibile la
 
 `python3 main.py`
 
-Dopo qualche minuto per la prima apertura, verrà mostrata una scelta tra le canzoni presenti nel dataset:
+La prima apertura con il nuovo ambiente può occupare qualche minuto. Successivamente verrà mostrata una scelta tra le canzoni presenti nel dataset:
 
 ```
 Which song would you like to analyze?:

@@ -2,21 +2,22 @@
 name: visual-audio
 channels:
   - defaults
+  - conda-forge
 dependencies:
   - python=3.12.3
-  - librosa
   - inquirer
   - statsmodels
   - matplotlib
-  - pygame
-  - webrtcvad
   - scipy
   - numpy
   - tqdm
   # dipendenze per separazione della traccia
+  - ffmpeg
   - pip:
       - demucs
       - pyloudnorm
       - essentia
-      - ffmpeg
-      - libsndfile
+      - librosa
+      # - libsndfile
+      - pygame
+      - webrtcvad
