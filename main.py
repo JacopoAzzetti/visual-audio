@@ -42,9 +42,6 @@ import tkinter as tk
 from tkinter import ttk
 from pygame import mixer
 
-# Speach Recognition
-import webrtcvad
-
 # Separatore traccie con modelli pre-addestrati
 from demucs import pretrained
 from demucs.apply import apply_model
@@ -82,6 +79,7 @@ data_set = [
     'Jay-Z - The Story Of OJ',
     'Jaska - Kimono',
     'Kanye West - Jail',
+    'Kendrick Lamar - Not Like Us',
     'Lana Del Rey - Groupie Love ft. A$AP Rocky',
     'Nada - Amore Disperato',
     'Pink Floyd - The Great Gig In The Sky',

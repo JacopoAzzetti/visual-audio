@@ -1,16 +1,15 @@
-librosa
+librosa==0.10.2.post1
 inquirer
-statsmodels
-matplotlib
-pygame
-webrtcvad
-scipy
-numpy
-tqdm
+statsmodels==0.14.2
+matplotlib==3.8.4
+pygame==2.6.0
+scipy==1.13.1
+numpy==1.26.4
+tqdm==4.66.4
 # libsndfile
-demucs
-pyloudnorm
-essentia
-# Linux: sudo apt-get install ffmpeg
-# MacOS: brew install ffmpeg
-# Windows: choco install ffmpeg
+demucs==4.0.1
+pyloudnorm==0.1.1
+essentia==2.1b6.dev1177
+# Linux: sudo apt-get install ffmpeg python3-tk
+# MacOS: brew install ffmpeg python3-tk
+# Windows: choco install ffmpeg 

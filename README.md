@@ -14,9 +14,28 @@ Una volta completata l'installazione come indicato, attivare l'ambiente virtuale
 
 `conda activate visual-audio`
 
-    Se fosse necessario eliminare un ambiente virtuale creato, utilizzare il seguente comando:
+### N.B.:
 
-    conda remove -n <ENV NAME> --all
+A disposizione è stato messo anche anche il file "requirements.txt" in caso di installazione delle dipendenze tramite pip e non utilizzando un ambiente `conda`.<br>Quindi tramite il comando:
+
+_(consigliabile sempre creare un ambiente virtuale prima)_<br>
+`pip install -r requirements.txt`
+
+È importante che venga installato anche la libreria `ffmpeg` che non viene installata tramite il file requirements _(a differenza di conda che lo installa subito alla creazione dell'environment)_.
+Per fare questo:
+
+- Linux: `sudo apt-get install ffmpeg`
+- MacOS: `brew install ffmpeg`
+<!-- - Windows: `choco install ffmpeg` -->
+
+Potrebbe essere necessario anche installare la libreria `tkinter`:
+
+- MacOS: `brew install python3-tk`
+- Linux: `sudo apt-get install python3-tk`
+
+Se fosse necessario eliminare un ambiente virtuale creato, utilizzare il seguente comando:
+
+`conda remove -n <ENV NAME> --all`
 
 ## Esecuzione del programma
 
