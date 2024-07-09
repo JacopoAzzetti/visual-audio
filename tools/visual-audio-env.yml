@@ -13,11 +13,11 @@ dependencies:
   - tqdm
   # dipendenze per separazione della traccia
   - ffmpeg
+  - pip
   - pip:
       - demucs
       - pyloudnorm
-      - essentia
+      - essentia # potrebbe dare qualche problema su Ubuntu
       - librosa
       # - libsndfile
       - pygame
-      - webrtcvad

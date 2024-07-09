@@ -14,6 +14,10 @@ Una volta completata l'installazione come indicato, attivare l'ambiente virtuale
 
 `conda activate visual-audio`
 
+Se fosse necessario eliminare un ambiente virtuale creato, utilizzare il seguente comando:
+
+`conda remove -n <ENV NAME> --all`
+
 ### N.B.:
 
 A disposizione è stato messo anche anche il file "requirements.txt" in caso di installazione delle dipendenze tramite pip e non utilizzando un ambiente `conda`.<br>Quindi tramite il comando:
@@ -32,10 +36,6 @@ Potrebbe essere necessario anche installare la libreria `tkinter`:
 
 - MacOS: `brew install python3-tk`
 - Linux: `sudo apt-get install python3-tk`
-
-Se fosse necessario eliminare un ambiente virtuale creato, utilizzare il seguente comando:
-
-`conda remove -n <ENV NAME> --all`
 
 ## Esecuzione del programma
 
@@ -68,11 +68,47 @@ Scorrendo in alto ed in basso con le frecce della tastiera, è possibile scorrer
 
 Successivamente, in base alla durata ed al peso della canzone selezionata, ci vorrà qualche minuto perché la canzone venga analizzata e le relative separazioni tra i vari elementi portata a termine.
 
-Alla fine verrà visualizzato l'esito dell'analisi ed un player con l'**immagine risultante** che sarà possibile seguire mentre il player farà ascoltare la canzone.
-Tutti gli altri output si possono trovare:
+Alla fine verrà visualizzata l'**immagine risultante** dall'analisi ed un player con cui sarà possibile ascoltare la traccia e nel frattempo osservare lo scorrere del tempo rispetto all'immagine.<br>
+Tutti gli altri output si troveranno:
 
-- nella cartella `./timefunction-img`, è presente una cartella con il nome della canzone analizzata contenente le immagini risultanti dall'analisi di ogni elemento (vocal, drums, bass, others) e la canzone complessiva
-- nella cartella `./separated_tracks` sono contenuti gli output audio risultanti dalla separazione della canzone nei suoi elementi
+- `./timefunction-img` contenente una sotto-cartella per ogni canzone analizzata. Al loro interno si trovano le immagini risultanti dall'analisi di ogni elemento (vocal, drums, bass, others) e la canzone complessiva
+
+- nella cartella `./separated_tracks` sono contenute le traccie audio risultanti dalla separazione della canzone nei suoi elementi _(drums.wav, vocals.wav, ...)_
+
+- `img_spectral_map` che contiene l'immagine NON in funzione del tempo, ma con il colore associato in media rispetto all'intera traccia
+
+Sul terminale invece, sono mostrati i dati calcolati come:
+
+- durata
+- BPM
+- RMS
+- LUFS
+- energia del segnale
+- pitch calcolato sull'intera canzone
+- chiave
+- danceability
+- coefficiente usato per l'associazione del colore _(tutto spiegato meglio nella documentazione)_
+
+Un esempio:
+
+```
+File: ASAP Rocky - RIOT
+
+Duration: 3 min e 10 sec
+BPM:  123
+
+RMS: 0.1841
+LUFS: -10.3398
+Signal Energy: + 4839.337588470828
+[...]
+Pitch: 816.67 Hz
+[...]
+Key: G
+
+Danceability: + 1.1934
+Coefficent: + 7498.92
+================================================================
+```
 
 ## Ampliare il Dataset
 
