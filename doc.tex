@@ -1,0 +1,388 @@
+\documentclass{article}
+\usepackage[italian]{babel}
+\usepackage{newlfont}
+\usepackage{graphicx} % Required for inserting images
+\usepackage{subcaption}
+\usepackage{natbib}
+\usepackage{hyperref}
+\hypersetup{
+    colorlinks=true,
+    linkcolor=blue,
+    filecolor=magenta,      
+    urlcolor=blue,
+    pdftitle={Overleaf Example},
+    pdfpagemode=FullScreen,
+    }
+\textwidth=450pt\oddsidemargin=0pt
+
+\begin{document}
+
+\begin{titlepage}
+    \begin{center}
+        {{\Large{\textsc{UNIVERSITÀ DEGLI STUDI DI VERONA}}}}\\
+        \vspace{5mm}
+        {{\Large{\textsc{Laurea in Informatica}}}}
+
+    \end{center}
+    \vspace{20mm}
+    \begin{center}
+        {\LARGE{\bf TESI DI LAUREA}}\\
+        \vspace{20 mm}
+        {\LARGE{\bf VISUAL AUDIO}}\\
+        \vspace{3 mm}
+        {\LARGE{Una Rappresentazione Visuale di Tracce Audio}}
+    \end{center}
+    \vspace{40mm}
+    \par
+    \noindent
+    \begin{minipage}[t]{0.47\textwidth}
+        {\large{\bf Relatore:\\
+                Prof. Marco Cristani}}
+    \end{minipage}
+    \hfill
+    \begin{minipage}[t]{0.47\textwidth}\raggedleft
+        {\large{\bf Presentata da:\\
+                Jacopo Azzetti}}
+    \end{minipage}
+    \vspace{20mm}
+    \begin{center}
+        {\large{\bf A.A. 2023/24 }}%inserire l'anno accademico a cui si Ë iscritti
+    \end{center}
+\end{titlepage}
+
+\newpage
+\tableofcontents
+\newpage
+
+\section{Introduzione}
+\label{sec:intro}
+Il progetto "Visual Audio" punta a realizzare un programma in grado di prendere in input una canzone come file audio \textit{(wav/mp3)}, analizzare questo segnale e ricavarne un'immagine che permetta all'utente di comprendere fin da subito alcuni aspetti della canzone, ancor prima di ascoltarla.\\
+
+L'output principale ricavabile è una singola immagine dove i colori che si
+possono osservare vanno da un \textbf{rosso intenso}, il quale sta a
+significare un momento nella canzone molto energico e ricco di suoni, ad un
+\textbf{blu scuro}, ossia un momento della canzone con un suono più "pulito",
+quindi con pochi elementi/strumenti e con una bassa energia.\\ È stata poi
+implementata una funzionalità per \textbf{estrarre componenti della canzone}
+per comprendere cose come l'ingresso di uno strumento oppure il riconoscimento
+della ritimca in funzione del tempo o ancora, l'ingresso della voce. Dovranno
+essere poi implementati visivamente, non più tramite variazione del colore, ma
+attraverso simboli o altri elementi grafici che facciano capire facilmente
+all'utente cosa succede in un preciso punto della canzone.
+
+\subsection{Ambito di Utilizzo}
+Lo scopo del progetto è quello di dare agli utenti delle principali piattaforme
+di streaming, uno strumento che gli permetta di capire a primo impatto
+(visivamente) se una canzone possa essere di loro interesse ancor prima di
+ascoltarla, in sutiazioni come playlist algoritmiche con decine di tracce
+diverse tra loro e sconosciute all'utente.\\
+
+Naturalmente l'intento \textbf{non} è quello di fare in modo che gli utenti
+ascoltino meno canzoni o di evitare che facciano la loro ricerca musicale, ma
+agevolarli ed indirizzarli su ciò che è più di loro interesse e quindi dargli
+la possibilità di ottimizzare il loro tempo per scoprire nuove canzoni.
+
+\newpage
+
+\section{Operatori}
+\label{sec:operatori}
+Per poter fare il mapping dell'immagine con un colore specifico, sono stati calcolati (utilizzando principalmente librerie già esistenti) i seguenti parametri:
+\begin{itemize}
+    \item \textbf{Duration}: durata della traccia/file audio calcolata in secondi
+    \item \textbf{BPM}: letteralmente i "battiti al minuto" misurati sulla canzone. Può essere interpretato come quanto ritmica e "veloce" è la canzone
+    \item \textbf{RMS}: misura della potenza media del segnale audio, dando una rappresentazione complessiva del suo livello di "Loudness"
+    \item \textbf{LUFS}: un secondo metodo di misurare la "Loudness" di un segnale audio, nonché il parametro solitamente utilizzato durante le fasi di "mastering" di una canzone
+    \item \textbf{Signal Energy}: energia effettiva del segnale tarata rispetto alla sua durata
+    \item \textbf{Pitch}: frequenza specifica del file audio (guardando lo spettrogramma della traccia è solitamente possibile osservare questo valore)
+    \item \textbf{Key}: chiave della canzone (in base alle parti melodiche ad agli accordi utilizzati)
+    \item \textbf{Danceability}: valore di "ballabilità" della canzone (misura che va da un minimo di 0 ad un massimo di 3)
+\end{itemize}
+
+Alcuni di questi valori sono successivamente utilizzati per calcolare un
+coefficente che poi permetterà di fare il mapping con il colore:
+\[
+    CF = \frac{energy}{pitch} + \left(\frac{energy}{bpm} \times duration\right)
+\]
+Dai diversi test fatti con più generi musicali, posso definire un valore minimo
+dell'output dell'equazione a 0 ed un massimo di 15000 per l'analisi
+dell'\textbf{intero file audio}.\\ Se invece si va ad analizzare la canzone per
+"bucket", si osserva che i valori massimi e minimi del coefficente
+diminuiscono. In quel caso quindi, vengono selezionati i parametri 0 come
+minimo e 40 come massimo.\\ Vado poi limitare l'output ottentuto tra 0 e 1:
+\[
+    map = 1 - \left( \frac{CF - min}{max - min} \right)
+\]
+e proseguo poi mappando il valore risultante al relativo colore, utilizzando la
+color map \textbf{"Spectral"} della libreria Matplotlib:
+
+\newpage
+
+\begin{figure}[h]
+    \centering
+    \includegraphics[width=1\linewidth]{spectral_colormap.png}
+    \caption{Specral colormap}
+    \label{fig:enter-label}
+\end{figure}
+
+In questo modo, sia analizzando l'intera traccia, che analizzandola suddivisa
+per bucket, si ottiene la corretta associazione del colore come anticipato
+nell'Introduzione.
+
+\section{Analisi degli Output}
+\label{sec:analisi-output}
+Applicando quanto descritto sopra ad un dataset di canzoni di test, otteniamo degli output come di seguito analizzati:
+
+\subsection{
+    \textit{Track}: Peggy Gou - It Goes Like (Nanana)
+}
+\textbf{\textit{Genere}: House}\\
+\\
+L'analisi dell'intera traccia in questione risulta in un colore "rosso acceso", il quale fa intendere all'osservatore, rispetto a quanto indicato precedentemente, che si tratterà di una canzone complessivamente molto energica e "ricca" di suoni. Elementi che caratterizzano il genere \textit{house}.
+\begin{figure}[h]
+    \centering
+    \includegraphics[width=0.8\linewidth]{it goes like (nanana) - full song.png}
+    \label{fig:peggy-gou-full}
+\end{figure}
+\\
+In un secondo output è riportata l'analisi della stessa canzone, ma in funzione del tempo. Mantenendo naturalmente lo stesso significato dei colori che vengono mappati al coefficente calcolato nel bucket di 1 secondo, è possibile notare le diverse sezioni della canzone ed i colori associati ad ognuno \textit{(rosso nei momenti più ricchi ed energici, blu durante il "breakdown" e dove troviamo quindi meno elementi ma più chiari e distinti, verde/giallo durante il la fase di "build up" in cui entrano più elementi, l'energia cresce e il suono va sempre più ad arricchirsi)}
+\begin{figure}[h]
+    \centering
+    \includegraphics[width=0.8\linewidth]{it goes like nanana - time dependent.png}
+    \label{fig:peggy-gou-td}
+\end{figure}
+\\
+\\
+È possibile verificare queste caratteristiche specifiche per il genere ”house" sottoponendo una seconda traccia dello stesso genere ed osservandone l'output.\\
+\subsection{
+    \textit{Track}: Armand Van Helden - Wings (I Won't Let You Down)
+}
+\textbf{\textit{Genere}: House}\\
+\\
+In questo caso il colore associato complessivamente alla canzone è sempre rosso, ma più intenso rispetto a prima. Questo comunica all'utente che si tratterà di una traccia ancora più energica e ricca di suoni, come effettivamente è.
+\begin{figure}[h!]
+    \centering
+    \includegraphics[width=0.8\linewidth]{wings - full.png}
+    \label{fig:armand-van-helden-full}
+\end{figure}
+\\
+Come visto nell'esempio precedente, l'analisi in funzione del tempo mostra chiaramente le varie sezioni della traccia come \textit{intro, buildup, breakdown, outro, ecc...}, con la differenza che in questo caso il "drop" risulta più intenso rispetto a prima:
+\begin{figure}[h]
+    \centering
+    \includegraphics[width=0.8\linewidth]{wings - td.png}
+    \label{fig:armand-van-helden-td}
+\end{figure}
+
+\subsection{
+    \textit{Track}: Sons Of The East - Into The Sun
+}
+\textbf{\textit{Genere}: Alternative/Indie}\\
+\\
+In questo caso la traccia analizzata è chiaramente diversa rispetto ai due casi precedenti e ciò può essere intuito dal colore rilevato sull'intera traccia, ovvero un verde tendente al giallo, che sulla scala della color map utilizzata sta appena sotto la metà. Questo quindi, permette all'utente di intuire che si tratterà di una canzone "tranquilla" e con principalmente elementi chiari e distinti, con un'energia medio/bassa in media rispetto alla durata della canzone.
+\begin{figure}[h]
+    \centering
+    \includegraphics[width=0.8\linewidth]{into-the-sun.png}
+    \label{fig:enter-label-full}
+\end{figure}
+\\
+Osservando invece l'andamento in funzione del tempo, vediamo che la canzone inizia in modo chiaro e tranquillo con solo un piano e una chitarra acustica \textit{(colore blu/azzurro)}, andando poi a crescere \textit{(colore verde/giallo)} con l'introduzione di più elementi e suoni come la voce principale ed altre di accompagnamento, una batteria ed un'ulteriore chitarra elettrica in sottofondo, oltre al piano iniziale che è sempre più marcato. Questo fino a poco prima della fine, dove si torna ad un momento di calma e con pochi elementi in campo \textit{(colore blu scuro)}
+\begin{figure}[h]
+    \centering
+    \includegraphics[width=0.8\linewidth]{into-the-sun-td.png}
+    \label{fig:into-the-sun-td}
+\end{figure}
+
+\subsection{
+    \textit{Track}: Vivian Roost - To The Sky
+}
+\textbf{\textit{Genere}: Classica}\\
+\\
+Come ulteriore analisi dei diversi output, prendiamo in considerazione una canzone la cui analisi ci restituisce un colore blu scuro che si avvicina al punto più basso della colormap scelta. Questo perché si tratta di un caso di musica classica composta solamente da pochi elementi come un pianoforte, un (probabile) violoncello o violino ed un altro elemento di sottofondo ricco di riverbero ed echo. Il tutto risulta quindi con un suono scuro, calmo e rilassante e ad una bassa energia.
+\begin{figure}[h]
+    \centering
+    \includegraphics[width=0.8\linewidth]{to-the-sky.png}
+    \label{fig:to-the-sky-full}
+\end{figure}
+\\
+Con l'analisi in funzione del tempo, osserviamo che l'unico momento in cui il colore tende un po' più al verde, è quando tutti gli elementi descritti sopra suonano contemporaneamente prima di decrescere verso la fine e tornare quindi su un colore blu/viola.
+\begin{figure}[h]
+    \centering
+    \includegraphics[width=4cm, height=2cm]{to-the-sky-td.png}
+    \label{fig:to-the-sky-td}
+\end{figure}
+\\
+\newpage
+\section{Separazione delle caratteristiche principali}
+Per arricchire ulteriormente l'analisi fatta, è stata utilizzata una delle
+librerie dedicate alla separazione degli elementi di una canzone
+\textit{(demucs, sviluppato da Meta)}, basata su modelli di Machine Learning
+pre-addestrati ed utilizzabili. Questo sta a significare che possiamo separare
+in file audio diversi i seguenti elementi:
+\begin{itemize}
+    \item Percussioni (Drums)
+    \item Basso (Bass)
+    \item Voci (Vocals)
+    \item Altri elementi come le melodie (Others)
+\end{itemize}
+Trattandosi anche questi di file audio dello stesso tipo \textit{(.wav ascoltabili dalla cartella ./separated\_tracks)}, possiamo utilizzare la stessa analisi specificata sopra, ottenendo i seguenti output:
+
+\begin{figure}[h]
+    \centering
+    \includegraphics[width=0.4\linewidth]{giorgio-by-moroder.png}
+    \caption{Daft Punk - Giorgio by Moroder (analisi completa)}
+    \label{fig:giorgio-by-moroder-main}
+\end{figure}
+
+\begin{figure}[h]
+    \centering
+    \begin{subfigure}{0.3\linewidth}
+        \centering
+        \includegraphics[width=0.95\linewidth]{giorgio-by-moroder-vocals.png}
+        \caption{vocal}
+        \label{fig:sub1}
+    \end{subfigure}%
+    \begin{subfigure}{0.3\linewidth}
+        \centering
+        \includegraphics[width=0.95\linewidth]{giorgio-by-moroder-drums.png}
+        \caption{drums}
+        \label{fig:sub2}
+    \end{subfigure}%
+    \begin{subfigure}{0.3\linewidth}
+        \centering
+        \includegraphics[width=0.95\linewidth]{giorgio-by-moroder-bass.png}
+        \caption{bass}
+        \label{fig:sub3}
+    \end{subfigure}
+    \label{fig:separazione-traccie}
+\end{figure}
+Nell'immagine iniziale è visualizzata l'immagine generata dall'analisi dell'intera canzone.\\
+Nel caso \textbf{(a)} si nota come la parte vocale, che in questo caso è un piccolo monologo e il rumore della folla, si presenti solo in tre punti distinti della canzone: all'inizio, al centro e alla fine.\\
+Nel caso \textbf{(b)} delle percussioni, è chiaramente visibile come queste siano l'elemento principale della canzone, richiamando anche i colori giallo/arancione che, come spiegato inizialmente, stanno a significare una fase energica e \textbf{ricca di sunoni}.\\
+Infine, nel caso \textbf{(c)} dove troviamo il basso, vediamo che anche questo è molto presente nella parte centrale e finale della canzone, con qualche mancanza nelle fasi di breack-down o bridge. Lo stesso discorso vale per i colori associati, ovvero più scuri e verso il verde/azzurro, ovvero un suono più pulito e chiaro (effettivamente è l'unico elemento presente in quella traccia audio), ma comunque con delle fasi verso il giallo/verde, ovvero leggermente più energiche ed un suono più marcato.\\
+\\
+Sarà quindi possibile in un secondo momento implementare l'analisi di queste traccie in un unica immagine rappresentativa della canzone e dei suoi diversi elementi. Questa funzionalità non è al momento presente non essendomi ben chiaro come visualizzare il tutto in modo tale che sia chiaro all'utente.
+\newpage
+\begin{figure}[h]
+    \centering
+    \includegraphics[width=0.75\linewidth]{forme-d-onda.png}
+    \caption{forme d'onda dei vari elementi separati}
+    \label{fig:forme-donda}
+\end{figure}
+Usando un programma di produzione musicale \textit{(in questo caso Ableton)} è possibile visualizzare le diverse forme d'onda degli elementi estratti. Partendo dall'alto: VOCAL, DRUMS, BASS, OTHER (melodie e strumenti).
+Naturalmente, ascoltare contemporaneamente tutte e quattro le estrazioni, risulterà nella riproduzione della traccia intera (non separata).
+
+\begin{figure}[h]
+    \centering
+    \begin{subfigure}{0.5\linewidth}
+        \centering
+        \includegraphics[width=0.98\linewidth]{giorgio-by-moroder-vocals.png}
+        \caption{VOCAL}
+        \label{fig:vocal}
+    \end{subfigure}%
+    \begin{subfigure}{0.5\linewidth}
+        \centering
+        \includegraphics[width=0.98\linewidth]{giorgio-by-moroder-drums.png}
+        \caption{DRUMS}
+        \label{fig:enter-label}
+    \end{subfigure}
+\end{figure}
+\begin{figure}[h]
+    \centering
+    \begin{subfigure}{0.5\linewidth}
+        \centering
+        \includegraphics[width=0.98\linewidth]{giorgio-by-moroder-bass.png}
+        \caption{BASS}
+        \label{fig:enter-label}
+    \end{subfigure}%
+    \begin{subfigure}{0.5\linewidth}
+        \centering
+        \includegraphics[width=0.98\linewidth]{other.png}
+        \caption{OTHER}
+        \label{fig:enter-label}
+    \end{subfigure}
+\end{figure}
+\newpage
+\section{Verifica di Correttezza}
+\label{sec:verifica-correttezza}
+Come verifiche della correttezza dei calcoli indicati nella sezione \hyperref[sec:operatori]{\textit{Operatori}} e deii colori mappati come visto nella \hyperref[sec:analisi-output]{\textit{Analisi degli Output}}, il programma è stato sottoposto a due test.
+\subsection{Coerenza dei colori in diverse parti della canzone}
+Il test consiste nell'analizzare per prima cosa una traccia per intero, così da
+ottenere l'immagine in funzione del tempo. Successivamente, la canzone viene
+divisa e ne viene presa solamente una parte per essere poi analizzata. Ci si
+aspetta che gli output di quest'ultimo siano uguali alla stessa sezione
+dell'analisi dell'intera canzone. Visivamente, ci aspettiamo che la sezione
+analizzata sia esattamente un estratto dell'immagine ricavata nella prima
+analisi. \\ \\ \textit{Traccia in esame}: ASAP Rocky - RIOT\\ \textit{Genere}:
+Hip-Hop/Rap\\
+\begin{figure}[h]
+    \centering
+    \begin{subfigure}{0.5\linewidth}
+        \centering
+        \includegraphics[width=.8\linewidth]{riot-intera-td.png}
+        \caption{canzone per intero}
+        \label{fig:sub1}
+    \end{subfigure}%
+    \begin{subfigure}{0.5\linewidth}
+        \centering
+        \includegraphics[width=.35\linewidth]{riot-splitted.png}
+        \caption{sezione iniziale della canzone}
+        \label{fig:sub2}
+    \end{subfigure}
+    \label{fig:analisi-canzone-separata}
+\end{figure}
+\\
+Si può osservare che la figura (b) è uguale alla sezione iniziale dell'immagine (a). Questo perché nel secondo caso, è stata tagliata la canzone iniziale lasciando solamente i primi secondi iniziali fino a poco dopo il ritornello \textit{(riconoscibile dal colore rosso)}.
+\newpage
+\subsection{Coerenza degli output nell'unione di due canzoni}
+In questo tipo di verifica, sono state prese due diverse canzoni ed unite
+assieme \textit{una dopo l'altra}. Ci aspettiamo che analizzando il file
+complessivo, l'immagine risultate sia equivalente all'unione delle singole
+immagini di output delle due canzoni analizzate ed unite.\\ \\ Le due tracce in
+esame sono:
+\begin{itemize}
+    \item Nico Morano - Juno Love (Santiago Garcia Remix) \textit{[Genere: Afro House]}
+    \item Sons Of The East - Into The Sun \textit{[Genere: Alternative/Indie]}
+\end{itemize}
+\begin{figure}[h]
+    \centering
+    \begin{subfigure}{0.5\linewidth}
+        \centering
+        \includegraphics[width=0.95\linewidth]{juno-love-td.png}
+        \caption{Nico Morano - Juno Love}
+        \label{fig:juno-love-td}
+    \end{subfigure}%
+    \begin{subfigure}{0.5\linewidth}
+        \centering
+        \includegraphics[width=0.88\linewidth]{into-the-sun-td.png}
+        \caption{Sons Of The East - Into The Sun}
+        \label{fig:into-the-sun-td-verifica}
+    \end{subfigure}
+    \label{fig:analisi-unione}
+\end{figure}
+\begin{figure}[h]
+    \centering
+    \includegraphics[width=1\linewidth]{juno-love + into-the-sun.png}
+    \caption{analisi dell'untione delle due traccie sopra indicate}
+    \label{fig:juno-love-into-th-sun}
+\end{figure}
+Come si può osservare, l'unione delle due canzoni è netta e corretta, con l'unica differenza che l'unione dei due file audio sembra avere avuto un effetto sui colori risultatnti \textit{(più visibile nell'immagine di sinistra)}. È probabile che sia in parte dovuto al programma utilizzato per fare l'unione e export del file complessivo \textit{(Ableton Live 11)}.
+
+\newpage
+\section{Riferimenti bibliografici}
+Orlovaitė, Ernesta, Visual Fingerprints: Identifying, Summarizing and Comparing
+Music (December 17, 2013). Available at SSRN:
+\url{https://ssrn.com/abstract=2373133 or
+    http://dx.doi.org/10.2139/ssrn.2373133} \\ \\ Spence, C., Di Stefano, N.
+(2022). Coloured Hearing, Colour Music, Colour Organs, and the Search for
+Perceptually Meaningful Correspondences Between Colour and Sound. i–Perception,
+13(0), 1–42. \url{https://doi.org/10.1177/20416695221092802} \\ \\ Miller, M.,
+Rauscher, J., Keim, D. A., and El-Assady, M. (2022). Corpusvis: Visual analysis
+of digital sheet music collections. In Computer Graphics Forum, volume 41,
+pages 283–294. Wiley Online Library. \url{ https://doi.org/10.1111/cgf.14540}
+\\ \\ Color Map:
+\url{https://matplotlib.org/stable/gallery/color/colormap_reference.html} \\ \\
+Musical Pitch: \url{https://www.britannica.com/art/pitch-music} \\ \\ Pitch
+detection using Python and autocorrelation:
+\url{https://www.scicoding.com/pitchdetection/}
+
+\end{document}
+

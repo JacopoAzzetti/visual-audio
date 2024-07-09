@@ -1,0 +1,22 @@
+# conda env create -f tools/visual-audio-env.yml
+name: visual-audio
+channels:
+  - defaults
+dependencies:
+  - python=3.12.3
+  - librosa
+  - inquirer
+  - statsmodels
+  - matplotlib
+  - pygame
+  - webrtcvad
+  - scipy
+  - numpy
+  - tqdm
+  # dipendenze per separazione della traccia
+  - ffmpeg
+  - libsndfile
+  - pip:
+      - demucs
+      - pyloudnorm
+      - essentia
